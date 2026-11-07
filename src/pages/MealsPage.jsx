@@ -2,14 +2,16 @@ import React from 'react';
 import MealTile from '../components/MealTile';
 import { SNACK_BY_ID, dayNutrition, mealsForTier, planRates, weekCost, money } from '../data/godDiet';
 import { mealsForDay, useHead } from '../lib/store';
-import { usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { usePlanMeals, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { CustomWeekBanner } from '../components/Chrome';
 
 export default function MealsPage() {
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const { meals } = usePlanMeals(tier, snack, pick);
+  const picks = useSnackPicks();
+  const { meals } = usePlanMeals(tier, snack, picks);
+  const bespokeGuac = picks.length === 1 && picks[0] === 'guac';
+  const pickNames = picks.map((p) => (SNACK_BY_ID[p] || {}).name).filter(Boolean);
   const r = planRates(tier, snack, meals);
   const wkCost = weekCost(meals);
   useHead({ title: 'The 21 Meals - The God Diet', description: 'All 21 meals of The God Diet: 7 days, morning, midday and evening, built only from the weekly pool.' });
@@ -20,14 +22,19 @@ export default function MealsPage() {
         Seven days, three meals a day, never the same plate twice in the week. Every meal is built only from the weekly pool, and together the 21 drain it exactly. On the {tier.toLocaleString()} plan shown here that pool is {r.beefOz} oz beef organ blend, {r.eggOz} oz egg, {r.sardineOz} oz sardines, {r.cheeseOz} oz cheese, {r.bananaOz} oz banana, {r.kiwiOz} oz kiwi, {r.avocadoOz} oz avocado, and {Math.round(r.tallowOz * 10) / 10} oz tallow. Finish Day 7 and the week loops back to Day 1.
       </p>
       <CustomWeekBanner />
-      {snack !== 'off' && pick === 'guac' && (
+      {snack !== 'off' && bespokeGuac && (
         <p className="mt-3 max-w-2xl leading-relaxed text-ink/65">
           The snack is on, {snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}: guac and chips between the midday and evening meals. The guacamole is that evening's avocado served early, and the portions on this page already make room for the chips, so the day still averages about {dayNutrition(meals).kcal.toLocaleString()} calories.
         </p>
       )}
-      {snack !== 'off' && pick !== 'guac' && (
+      {snack !== 'off' && !bespokeGuac && picks.length > 0 && (
         <p className="mt-3 max-w-2xl leading-relaxed text-ink/65">
-          The snack is on, {snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}: {(SNACK_BY_ID[pick] || {}).name || 'the picked snack'} between the midday and evening meals. The portions on this page already make room for it, so the day still averages about {dayNutrition(meals).kcal.toLocaleString()} calories.
+          The snacks are on, {snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}, rotating between the midday and evening meals: {pickNames.join(', ')}. The portions on this page already make room for them, so the day still averages about {dayNutrition(meals).kcal.toLocaleString()} calories.
+        </p>
+      )}
+      {snack !== 'off' && picks.length === 0 && (
+        <p className="mt-3 max-w-2xl leading-relaxed text-ink/65">
+          The snack switch is on but no kind is picked, so the week below is the plain plan. Pick one kind, or as many as you want, with the Kinds button above.
         </p>
       )}
       <p className="mt-3 max-w-2xl leading-relaxed text-ink/65">

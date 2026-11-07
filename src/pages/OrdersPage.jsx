@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useHead } from '../lib/store';
-import { usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { usePlanMeals, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { ORDER_WEEK_OPTIONS, orderSchedule } from '../data/godDiet';
 
 const SETTINGS_KEY = 'goddiet-orders-v2';
@@ -34,8 +34,8 @@ const SHIPPER_DOT = {
 export default function OrdersPage() {
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const { meals } = usePlanMeals(tier, snack, pick);
+  const picks = useSnackPicks();
+  const { meals } = usePlanMeals(tier, snack, picks);
   useHead({ title: 'Order Calendar - The God Diet', description: 'Exactly what to order, from which company, on exactly which day: the 2-week fresh cycle, the beef bundle, the cheese pack, and the pantry block order, sized to your plan.' });
   const todayISO = isoOf(new Date());
   const [settings, setSettings] = useState(() => loadJSON(SETTINGS_KEY, { start: todayISO, blockWeeks: 10, eggPackSize: 12 }));
@@ -47,7 +47,7 @@ export default function OrdersPage() {
   const events = useMemo(() => orderSchedule(settings.blockWeeks, settings.eggPackSize, tier, snack, 52, meals).map((e) => {
     const date = addDays(start, e.weekOffset * 7);
     return { ...e, date, dateISO: isoOf(date), uid: `${e.id}|${settings.start}|${settings.blockWeeks}|${settings.eggPackSize}|${tier}` };
-  }), [settings, start, tier, snack, pick, meals]);
+  }), [settings, start, tier, snack, picks, meals]);
 
   const byDate = useMemo(() => {
     const map = new Map();

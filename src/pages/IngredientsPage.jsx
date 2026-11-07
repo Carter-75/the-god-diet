@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { BUY, CONDIMENTS, ORDER_WEEK_OPTIONS, PRICE_BASIS, beefSavingsPerWeek, bulkOrder, ingredientsForTier, ingredientWeekCost, mealsForTier, poolForTier, weekCost, money } from '../data/godDiet';
 import { useHead } from '../lib/store';
-import { usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { usePlanMeals, useSnack, useSnackPicks, useTier } from '../lib/plan';
 
 export default function IngredientsPage() {
   useHead({ title: 'Ingredients - The God Diet', description: 'Every ingredient on The God Diet, its weekly amount in ounces, and the exact source that passes for it.' });
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const { meals } = usePlanMeals(tier, snack, pick);
+  const picks = useSnackPicks();
+  const { meals } = usePlanMeals(tier, snack, picks);
   const ingredients = ingredientsForTier(tier, snack, meals);
   const pool = poolForTier(tier, snack, meals);
   const wkCost = weekCost(meals);

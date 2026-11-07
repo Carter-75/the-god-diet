@@ -54,9 +54,10 @@ export function mealIngredients(meal) {
 
 export { mealCost, money, TALLOW_TSP, BUY };
 
-export function recipeText(meal, tier = 2500, snack = 'off', pick = 'guac') {
-  const dn = dayNutrition(mealsForTier(tier, snack, pick));
-  const tallowTotal = snack !== 'off' && pick === 'guac' && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack] ? SNACK_TRIMS[tier][snack].tallowOz : Math.round(planRates(tier, snack, undefined, pick).tallowOz * 10) / 10;
+export function recipeText(meal, tier = 2500, snack = 'off', picks = ['guac']) {
+  const dn = dayNutrition(mealsForTier(tier, snack, picks));
+  const bespokeGuac = Array.isArray(picks) && picks.length === 1 && picks[0] === 'guac';
+  const tallowTotal = snack !== 'off' && bespokeGuac && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack] ? SNACK_TRIMS[tier][snack].tallowOz : Math.round(planRates(tier, snack, undefined, picks).tallowOz * 10) / 10;
   const L = [`${meal.name} (Day ${meal.day}, ${meal.slot}) - the ${tier.toLocaleString()} calorie plan`, meal.description, '', 'Ingredients (ounces first, then the rounded amount to actually use):'];
   for (const i of mealIngredients(meal)) L.push(i.oz !== null ? `- ${i.item}: ${i.oz} oz (${i.practical})` : `- ${i.item}: ${i.practical}`);
   L.push(`- Beef tallow: ${TALLOW_TSP[meal.tallow]}${meal.tallow === 'no' ? '' : `, from the week's ${tallowTotal} oz`}`);

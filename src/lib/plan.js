@@ -64,32 +64,43 @@ export function useSnack() {
   return snack;
 }
 
-// The snack pick: which snack from the catalog the snack switcher serves.
-// Same pattern again: localStorage plus a window event. Defaults to guac
-// and chips, the original snack.
-const PICK_KEY = 'goddiet-snackpick';
-export const SNACK_PICK_EVENT = 'goddiet-snackpick-change';
+// The snack picks: which snacks from the catalog the snack switcher
+// serves. Carter can select as many or as few as he wants (Nov 7, 2026);
+// the picked snacks rotate across the snack days in the order they were
+// picked. Same pattern again: localStorage plus a window event. Defaults
+// to guac and chips alone, the original snack. The earlier single-pick
+// key is read once as the starting selection.
+const PICKS_KEY = 'goddiet-snackpicks';
+const PICK_KEY_OLD = 'goddiet-snackpick';
+export const SNACK_PICK_EVENT = 'goddiet-snackpicks-change';
+const validPick = (id) => SNACK_CATALOG.some((s) => s.id === id);
 
-export function getSnackPick() {
+export function getSnackPicks() {
   try {
-    const v = window.localStorage.getItem(PICK_KEY);
-    return SNACK_CATALOG.some((s) => s.id === v) ? v : 'guac';
-  } catch { return 'guac'; }
+    const raw = window.localStorage.getItem(PICKS_KEY);
+    if (raw !== null) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr.filter(validPick);
+    }
+    const old = window.localStorage.getItem(PICK_KEY_OLD);
+    return [validPick(old) ? old : 'guac'];
+  } catch { return ['guac']; }
 }
 
-export function setSnackPick(v) {
-  try { window.localStorage.setItem(PICK_KEY, v); } catch { /* private mode */ }
-  window.dispatchEvent(new CustomEvent(SNACK_PICK_EVENT, { detail: v }));
+export function setSnackPicks(arr) {
+  const clean = (Array.isArray(arr) ? arr : []).filter(validPick);
+  try { window.localStorage.setItem(PICKS_KEY, JSON.stringify(clean)); } catch { /* private mode */ }
+  window.dispatchEvent(new CustomEvent(SNACK_PICK_EVENT, { detail: clean }));
 }
 
-export function useSnackPick() {
-  const [pick, set] = useState(getSnackPick);
+export function useSnackPicks() {
+  const [picks, set] = useState(getSnackPicks);
   useEffect(() => {
-    const onChange = (e) => set(typeof e.detail === 'string' ? e.detail : getSnackPick());
+    const onChange = (e) => set(Array.isArray(e.detail) ? e.detail : getSnackPicks());
     window.addEventListener(SNACK_PICK_EVENT, onChange);
     return () => window.removeEventListener(SNACK_PICK_EVENT, onChange);
   }, []);
-  return pick;
+  return picks;
 }
 
 // Custom weeks: when the Ask assistant's proposal is applied, the resulting
@@ -98,38 +109,41 @@ export function useSnackPick() {
 // localStorage + window event pattern as the tier and snack settings.
 const CUSTOM_KEY = 'goddiet-custom-v1';
 export const CUSTOM_EVENT = 'goddiet-custom-change';
-const planKey = (tier, snack, pick) => `${tier}|${snack}|${pick || 'guac'}`;
+const picksKey = (picks) => (Array.isArray(picks) && picks.length ? picks : ['guac']).join(',');
+const planKey = (tier, snack, picks) => `${tier}|${snack}|${picksKey(picks)}`;
 
 function loadCustom() {
   try { return JSON.parse(window.localStorage.getItem(CUSTOM_KEY)) || {}; } catch { return {}; }
 }
-export function getCustomWeek(tier, snack, pick = 'guac') {
-  const c = loadCustom()[planKey(tier, snack, pick)];
+export function getCustomWeek(tier, snack, picks = ['guac']) {
+  const c = loadCustom()[planKey(tier, snack, picks)];
   return c && Array.isArray(c.meals) && c.meals.length ? c : null;
 }
-export function setCustomWeek(tier, snack, meals, pick = 'guac') {
+export function setCustomWeek(tier, snack, meals, picks = ['guac']) {
   const all = loadCustom();
-  all[planKey(tier, snack, pick)] = { meals, savedAt: Date.now() };
+  all[planKey(tier, snack, picks)] = { meals, savedAt: Date.now() };
   try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch { /* private mode */ }
   window.dispatchEvent(new CustomEvent(CUSTOM_EVENT));
 }
-export function clearCustomWeek(tier, snack, pick = 'guac') {
+export function clearCustomWeek(tier, snack, picks = ['guac']) {
   const all = loadCustom();
-  delete all[planKey(tier, snack, pick)];
+  delete all[planKey(tier, snack, picks)];
   try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch { /* private mode */ }
   window.dispatchEvent(new CustomEvent(CUSTOM_EVENT));
 }
-export function useCustomWeek(tier, snack, pick = 'guac') {
-  const [custom, set] = useState(() => getCustomWeek(tier, snack, pick));
+export function useCustomWeek(tier, snack, picks = ['guac']) {
+  const key = picksKey(picks);
+  const [custom, set] = useState(() => getCustomWeek(tier, snack, picks));
   useEffect(() => {
-    const onChange = () => set(getCustomWeek(tier, snack, pick));
+    const onChange = () => set(getCustomWeek(tier, snack, picks));
     onChange();
     window.addEventListener(CUSTOM_EVENT, onChange);
     return () => window.removeEventListener(CUSTOM_EVENT, onChange);
-  }, [tier, snack, pick]);
-  return [custom, (meals) => setCustomWeek(tier, snack, meals, pick), () => clearCustomWeek(tier, snack, pick)];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tier, snack, key]);
+  return [custom, (meals) => setCustomWeek(tier, snack, meals, picks), () => clearCustomWeek(tier, snack, picks)];
 }
-export function usePlanMeals(tier, snack, pick = 'guac') {
-  const [custom] = useCustomWeek(tier, snack, pick);
-  return { meals: custom ? custom.meals : mealsForTier(tier, snack, pick), isCustom: !!custom, custom };
+export function usePlanMeals(tier, snack, picks = ['guac']) {
+  const [custom] = useCustomWeek(tier, snack, picks);
+  return { meals: custom ? custom.meals : mealsForTier(tier, snack, picks), isCustom: !!custom, custom };
 }

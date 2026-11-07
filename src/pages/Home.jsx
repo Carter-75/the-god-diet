@@ -4,14 +4,14 @@ import { ArrowRight, Repeat, Scale, ShoppingBasket } from 'lucide-react';
 import MealTile from '../components/MealTile';
 import { PLAN_TIERS, TIER_TALLOW_OZ, dayNutrition, ingredientWeekCost, mealsForTier, poolForTier, weekCost, money } from '../data/godDiet';
 import { mealsForDay, useHead } from '../lib/store';
-import { usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { usePlanMeals, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { CustomWeekBanner, PlanSwitcher } from '../components/Chrome';
 
 export default function Home() {
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const { meals } = usePlanMeals(tier, snack, pick);
+  const picks = useSnackPicks();
+  const { meals } = usePlanMeals(tier, snack, picks);
   const pool = poolForTier(tier, snack, meals);
   const tallowOz = pool.find((p) => p.item === 'Beef tallow').oz;
   const dayNut = dayNutrition(meals);

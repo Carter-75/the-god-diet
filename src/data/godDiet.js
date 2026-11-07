@@ -509,6 +509,35 @@ export const SNACK_CATALOG = [
 export const SNACK_BY_ID = Object.fromEntries(SNACK_CATALOG.map((s) => [s.id, s]));
 export const SNACK_GROUPS = [...new Set(SNACK_CATALOG.map((s) => s.group))];
 
+// Snack picks arrive as a list (Carter can select as many or as few as he
+// wants); this keeps only real catalog ids, in his order.
+export function normPicks(picks) {
+  if (!Array.isArray(picks)) return ['guac'];
+  return picks.filter((id) => SNACK_BY_ID[id]);
+}
+
+// Guac and chips inside a mix: when guac is the ONLY pick it keeps its
+// bespoke build (the evening avocado relocates). In a mix it is a full
+// snack of its own: 3 oz of avocado counted in the pool, plus the chips.
+function mixGuacMeal(day) {
+  return {
+    id: `snack-guac-d${day}`, day, slot: 'Snack', name: SNACK.name,
+    description: 'Guac and chips as one of the picked snacks in the mix: fresh guacamole from its own 3 oz of avocado (counted in the pool above) and a label serving of the chips that pass, Boulder Canyon Thin & Crispy: potatoes, avocado oil, sea salt.',
+    steps: [
+      'Scoop 3 oz of avocado (about three quarters of one avocado) into a bowl. In a mix this avocado is the snack\'s own, counted in the weekly pool.',
+      'Mash it rough with a fork, Celtic sea salt, and a squeeze of lemon. That is the whole guacamole.',
+      'Weigh out 1 oz of chips, about 20 thin chips, a sixth of the 6 oz bag. Put the bag away before you sit down.',
+      'Eat it between the midday and evening meals.',
+    ],
+    minutes: 5,
+    beef: 0, egg: 0, sardines: 0, salmon: 0, cheese: 0,
+    fruit: 'Avocado', fruitOz: SNACK.guacOz, chips: SNACK.chipsOz,
+    blueberries: 0, broccoli: 0, flax: 0, broth: 0, bread: 0, wrap: 0, tallow: 'no',
+    coconutWater: 0, ketchup: 0, mayo: 0, mustard: 0, honey: 0, oliveOil: 0, pickles: 0, psyllium: 0,
+    snackPick: 'guac',
+  };
+}
+
 function catalogSnackMeal(entry, day) {
   return {
     id: `snack-${entry.id}-d${day}`, day, slot: 'Snack', name: entry.name,
@@ -658,7 +687,8 @@ export const TIER_FRUIT_TRIM = { 1500: 0.5, 2000: 1, 2500: 0 };
 // resolved from that size's tallow pool. A snack pick other than guac takes
 // the catalog path: the base week, the picked snack on the snack days, and
 // balanceSnackWeek making the room.
-export function mealsForTier(tier = 2500, snack = 'off', pick = 'guac') {
+export function mealsForTier(tier = 2500, snack = 'off', picks = ['guac']) {
+  const pickList = normPicks(picks);
   const overrides = TIER_OVERRIDES[tier] || {};
   const merged = MEALS.map((m) => ({ ...m, ...(overrides[m.id] || {}) }));
   const baseFruitTrim = TIER_FRUIT_TRIM[tier] || 0;
@@ -667,19 +697,23 @@ export function mealsForTier(tier = 2500, snack = 'off', pick = 'guac') {
       if (m.fruit === 'Banana' || m.fruit === 'Kiwi') m.fruitOz = Math.max(2, m.fruitOz - baseFruitTrim);
     }
   }
-  if (snack !== 'off' && pick !== 'guac') {
-    const entry = SNACK_BY_ID[pick];
-    if (entry && !entry.special) {
-      const baseTallowOz = TIER_TALLOW_OZ[tier] ?? 4;
-      const units0 = merged.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
-      for (const m of merged) m.tallowOz = (TALLOW_UNIT_MAP[m.tallow] / units0) * baseTallowOz;
-      for (const day of SNACK_DAYS[snack]) merged.push(catalogSnackMeal(entry, day));
-      balanceSnackWeek(merged, tier);
-      return merged;
-    }
+  // The catalog path: any pick list that is not exactly guac alone. The
+  // picked snacks rotate across the snack days in pick order, and
+  // balanceSnackWeek makes the room.
+  if (snack !== 'off' && pickList.length && !(pickList.length === 1 && pickList[0] === 'guac')) {
+    const baseTallowOz = TIER_TALLOW_OZ[tier] ?? 4;
+    const units0 = merged.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
+    for (const m of merged) m.tallowOz = (TALLOW_UNIT_MAP[m.tallow] / units0) * baseTallowOz;
+    SNACK_DAYS[snack].forEach((day, i) => {
+      const entry = SNACK_BY_ID[pickList[i % pickList.length]];
+      merged.push(entry.id === 'guac' ? mixGuacMeal(day) : catalogSnackMeal(entry, day));
+    });
+    balanceSnackWeek(merged, tier);
+    return merged;
   }
   let tallowOz = TIER_TALLOW_OZ[tier] ?? 4;
-  if (snack !== 'off' && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack]) {
+  const bespokeGuac = pickList.length === 1 && pickList[0] === 'guac';
+  if (snack !== 'off' && bespokeGuac && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack]) {
     const trims = SNACK_TRIMS[tier][snack];
     tallowOz = trims.tallowOz;
     const eggSet = new Set(trims.eggCuts);
@@ -753,13 +787,13 @@ export function mealFromSpec(spec, day, slot) {
 
 // Adjust a modified week back into the size's calorie range using the plan
 // levers, protecting the meals flagged custom until everything else is used.
-export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off', pick = 'guac') {
+export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off', picks = ['guac']) {
   const [lo, hi] = TIER_RANGES[tier] || TIER_RANGES[2500];
-  const target = dayNutrition(mealsForTier(tier, snack, pick)).kcal;
+  const target = dayNutrition(mealsForTier(tier, snack, picks)).kcal;
   const meals = inputMeals.map((m) => ({ ...m }));
   const dayOf = () => dayNutrition(meals).kcal;
   const dayBefore = dayOf();
-  let poolOz = planRates(tier, snack, undefined, pick).tallowOz;
+  let poolOz = planRates(tier, snack, undefined, picks).tallowOz;
   const applyPool = () => {
     const units = meals.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
     for (const m of meals) m.tallowOz = units ? (TALLOW_UNIT_MAP[m.tallow] / units) * poolOz : 0;
@@ -796,7 +830,7 @@ export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off', pick = 'g
       break;
     }
   }
-  const basePool = planRates(tier, snack, undefined, pick).tallowOz;
+  const basePool = planRates(tier, snack, undefined, picks).tallowOz;
   if (poolOz !== basePool) notes.push(`Tallow pool ${Math.round(basePool * 10) / 10} oz to ${Math.round(poolOz * 10) / 10} oz`);
   if (fruitTrim) notes.push(`Banana and kiwi trimmed ${fruitTrim} oz at each meal that had room`);
   if (eggCutIds.length) notes.push(`One egg fewer at ${eggCutIds.length} meal${eggCutIds.length === 1 ? '' : 's'}`);
@@ -807,8 +841,8 @@ export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off', pick = 'g
 
 // Weekly totals for one plan size, summed from its meals. Single source for
 // the pool table, the ingredient cards, and both order planners.
-export function planRates(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
-  const meals = mealsOverride || mealsForTier(tier, snack, pick);
+export function planRates(tier = 2500, snack = 'off', mealsOverride, picks = ['guac']) {
+  const meals = mealsOverride || mealsForTier(tier, snack, picks);
   const sum = (f) => meals.reduce((s, m) => s + (f(m) || 0), 0);
   return {
     tier,
@@ -832,7 +866,9 @@ export function planRates(tier = 2500, snack = 'off', mealsOverride, pick = 'gua
     tallowOz: sum((m) => m.tallowOz),
     chipsOz: sum((m) => m.chips),
     snackServings: sum((m) => (m.slot === 'Snack' ? 1 : 0)),
-    snackPick: (meals.find((m) => m.slot === 'Snack') || {}).snackPick || (snack !== 'off' ? 'guac' : null),
+    snackPicks: [...new Set(meals.filter((m) => m.slot === 'Snack' && m.snackPick).map((m) => m.snackPick))],
+    snackServingsByPick: Object.fromEntries([...new Set(meals.filter((m) => m.slot === 'Snack' && m.snackPick).map((m) => m.snackPick))].map((pid) => [pid, meals.filter((m) => m.snackPick === pid).length])),
+    snackBespokeGuac: meals.some((m) => m.id.startsWith('guac-and-chips-')),
     breadOz: sum((m) => m.bread),
     wrapOz: sum((m) => m.wrap),
     coconutOz: sum((m) => m.coconutWater),
@@ -855,19 +891,19 @@ const fmtOz = (n) => {
 // servings a week the setting calls for, and where it comes from. Homemade
 // picks draw their ingredients from the pool rows themselves, so their note
 // says so instead of adding a product.
-function snackPoolRow(pickId, snack, r) {
+function snackPoolRow(pickId, snack, servings) {
   const entry = SNACK_BY_ID[pickId];
   if (!entry) return { item: 'Snack', oz: null, note: '' };
-  const freq = snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7';
+  const freq = snack === 'daily' ? 'in the weekly rotation' : 'in the rotation on Days 1, 3, 5 and 7';
   if (entry.homemade) {
-    return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}, ${r.snackServings} servings a week, ${freq}. It is homemade from the pool's own fruit, honey and coconut water, which are already counted in the rows above.` };
+    return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}, ${servings} servings a week, ${freq}. It is homemade from the pool's own fruit, honey and coconut water, which are already counted in the rows above.` };
   }
-  return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}: ${r.snackServings} servings a week, ${freq}, ${entry.portionText} each. ${entry.poolText || ''}` };
+  return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}: ${servings} servings a week, ${freq}, ${entry.portionText} each. ${entry.poolText || ''}` };
 }
 
 // The weekly pool table for one plan size, same shape as POOL.
-export function poolForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
-  const r = planRates(tier, snack, mealsOverride, pick);
+export function poolForTier(tier = 2500, snack = 'off', mealsOverride, picks = ['guac']) {
+  const r = planRates(tier, snack, mealsOverride, picks);
   const base = Object.fromEntries(POOL.map((p) => [p.item, p]));
   const row = (item, oz, note) => ({ item, oz, note: note ?? base[item].note });
   return [
@@ -887,8 +923,9 @@ export function poolForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'g
     row('Beef tallow', r.tallowOz),
     { item: 'Einkorn sourdough', oz: r.breadOz, note: 'Homemade from Jovial organic einkorn flour. The only bread that passes: an old wheat leavened by a sourdough starter, never commercial yeast. Every store bread checked is banned. 2 oz at each of the two subs.' },
     { item: 'Cassava wraps', oz: r.wrapOz, note: 'Siete cassava flour tortillas, approved in the checked database. 2 tortillas at the egg salad wraps.' },
-    ...(snack !== 'off' && r.snackPick === 'guac' ? [{ item: 'Potato chips', oz: r.chipsOz, note: `Boulder Canyon Thin & Crispy Classic Sea Salt. The snack: 1 oz (about 20 chips) with 3 oz of guacamole, ${snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}. The guacamole avocado comes out of that day's evening meal, so the avocado row above does not change.` }] : []),
-    ...(snack !== 'off' && r.snackPick && r.snackPick !== 'guac' ? [snackPoolRow(r.snackPick, snack, r)] : []),
+    ...(snack !== 'off' && r.snackBespokeGuac ? [{ item: 'Potato chips', oz: r.chipsOz, note: `Boulder Canyon Thin & Crispy Classic Sea Salt. The snack: 1 oz (about 20 chips) with 3 oz of guacamole, ${snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}. The guacamole avocado comes out of that day's evening meal, so the avocado row above does not change.` }] : []),
+    ...(snack !== 'off' && !r.snackBespokeGuac && r.snackPicks.includes('guac') ? [{ item: 'Potato chips', oz: r.chipsOz, note: `Boulder Canyon Thin & Crispy Classic Sea Salt. For the guac and chips in the snack mix: 1 oz (about 20 chips) per guac snack. In a mix the guacamole has its own avocado, which is counted in the avocado row above.` }] : []),
+    ...(snack !== 'off' && !r.snackBespokeGuac ? r.snackPicks.filter((pid) => pid !== 'guac').map((pid) => snackPoolRow(pid, snack, r.snackServingsByPick[pid] || 0)) : []),
     row('Celtic sea salt', null),
     row('Water', null),
   ];
@@ -896,8 +933,8 @@ export function poolForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'g
 
 // The ingredient cards for one plan size: same sources and details, with the
 // weekly amount for that size.
-export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
-  const r = planRates(tier, snack, mealsOverride, pick);
+export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride, picks = ['guac']) {
+  const r = planRates(tier, snack, mealsOverride, picks);
   const ozByName = {
     'Beef organ blend': r.beefOz, 'Eggs': r.eggOz, 'Sardines': r.sardineOz,
     'Wild sockeye salmon': r.salmonOz, 'Wild blueberries': r.blueberriesOz,
@@ -907,7 +944,7 @@ export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride, pi
     'Einkorn sourdough': r.breadOz, 'Cassava wraps': r.wrapOz,
   };
   return INGREDIENTS
-    .filter((ing) => (snack !== 'off' && r.snackPick === 'guac') || ing.name !== 'Potato chips')
+    .filter((ing) => (snack !== 'off' && r.chipsOz > 0) || ing.name !== 'Potato chips')
     .map((ing) => ({ ...ing, weeklyOz: ing.name === 'Potato chips' ? r.chipsOz : (ing.weeklyOz === null ? null : (ozByName[ing.name] ?? ing.weeklyOz)) }));
 }
 
@@ -1419,22 +1456,30 @@ export function bulkOrder(weeks, eggPackSize = 12, tier = 2500, snack = 'off', m
     const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
     pantry.items.push(`Einkorn flour for the sourdough: ${flourBags} bag${flourBags === 1 ? '' : 's'} of Jovial organic einkorn (32 oz each) = ${flourBags * 32} oz for ${fmtOz(weeks * r.breadOz * 0.68)} oz of flour across the block; the bread is baked at home, one small loaf a week. Siete cassava flour tortillas: ${wrapPacks} packs (7 oz, 8 ct) = ${wrapPacks * 7} oz for ${fmtOz(weeks * r.wrapOz)} oz of wraps; they freeze well between blocks.`);
   }
-  if (snack !== 'off' && r.snackPick === 'guac') {
+  if (snack !== 'off' && r.chipsOz > 0) {
     const chipBags = Math.ceil((weeks * r.chipsOz) / SNACK.bagOz);
     const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
     pantry.items.push(`Potato chips for the snack: ${chipBags} bags of Boulder Canyon Thin & Crispy (6 oz each) = ${chipBags * SNACK.bagOz} oz for ${weeks * r.chipsOz} oz of snacks across the block; the rest of the last bag rolls into the next block. The guacamole needs no order of its own: its avocado is already in the fresh shipments.`);
   }
-  if (snack !== 'off' && r.snackPick && r.snackPick !== 'guac') {
-    const entry = SNACK_BY_ID[r.snackPick];
+  if (snack !== 'off') {
     const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
-    if (entry && entry.homemade) {
-      pantry.items.push(`${entry.name} for the snack: homemade from pool ingredients, so its fruit, honey and coconut water are already counted in the amounts above and there is nothing extra to order.`);
-    } else if (entry && entry.unitLabel) {
-      const total = weeks * r.snackServings;
-      const units = Math.ceil(total / entry.servingsPerUnit);
-      pantry.items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel} = ${units * entry.servingsPerUnit} servings for ${total} snacks across the block; the rest rolls into the next block. ${entry.poolText || ''}`);
-    } else if (entry) {
-      pantry.items.push(`${entry.name} for the snack: sold by the case; one case covers this block's ${weeks * r.snackServings} snacks with plenty left over. ${entry.poolText || ''}`);
+    const homemadeNames = [];
+    for (const pid of r.snackPicks) {
+      if (pid === 'guac') continue;
+      const entry = SNACK_BY_ID[pid];
+      if (!entry) continue;
+      const servingsPerWeek = r.snackServingsByPick[pid] || 0;
+      if (entry.homemade) { homemadeNames.push(entry.name); continue; }
+      if (entry.unitLabel) {
+        const total = weeks * servingsPerWeek;
+        const units = Math.ceil(total / entry.servingsPerUnit);
+        pantry.items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel} = ${units * entry.servingsPerUnit} servings for ${total} snacks across the block; the rest rolls into the next block. ${entry.poolText || ''}`);
+      } else {
+        pantry.items.push(`${entry.name} for the snack: sold by the case; one case covers this block's ${weeks * servingsPerWeek} snacks with plenty left over. ${entry.poolText || ''}`);
+      }
+    }
+    if (homemadeNames.length) {
+      pantry.items.push(`${homemadeNames.join(' and ')} for the snack: homemade from pool ingredients, so their fruit, honey and coconut water are already counted in the amounts above and there is nothing extra to order.`);
     }
   }
   return { totals, sources };
@@ -1563,19 +1608,24 @@ export function orderSchedule(blockWeeks = 10, eggPackSize = 12, tier = 2500, sn
       `Jovial organic einkorn flour: ${flourBags} bag${flourBags === 1 ? '' : 's'} (32 oz) for the homemade sourdough`,
       `Siete cassava flour tortillas: ${wrapPacks} packs (7 oz, 8 ct)`,
     ]);
-    if (snack !== 'off' && r.snackPick === 'guac') {
+    if (snack !== 'off' && r.chipsOz > 0) {
       const chipBags = Math.ceil((blockWeeks * r.chipsOz) / SNACK.bagOz);
       byKey.get(`${w}|Pantry bulk shipment`).items.push(`Boulder Canyon Thin & Crispy chips: ${chipBags} bags (6 oz) for the snack`);
     }
-    if (snack !== 'off' && r.snackPick && r.snackPick !== 'guac') {
-      const entry = SNACK_BY_ID[r.snackPick];
-      if (entry && entry.homemade) {
-        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: homemade, its ingredients ride the fresh and pantry orders above`);
-      } else if (entry && entry.unitLabel) {
-        const units = Math.ceil((blockWeeks * r.snackServings) / entry.servingsPerUnit);
-        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel}`);
-      } else if (entry) {
-        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: 1 case`);
+    if (snack !== 'off') {
+      for (const pid of r.snackPicks) {
+        if (pid === 'guac') continue;
+        const entry = SNACK_BY_ID[pid];
+        if (!entry) continue;
+        const servingsPerWeek = r.snackServingsByPick[pid] || 0;
+        if (entry.homemade) {
+          byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: homemade, its ingredients ride the fresh and pantry orders above`);
+        } else if (entry.unitLabel) {
+          const units = Math.ceil((blockWeeks * servingsPerWeek) / entry.servingsPerUnit);
+          byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel}`);
+        } else {
+          byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: 1 case`);
+        }
       }
     }
   }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Beef, Menu, X } from 'lucide-react';
 import { SITE, TAGLINE } from '../lib/store';
-import { PLAN_TIERS, SNACK_MODES, setSnack, setSnackPick, setTier, useCustomWeek, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { PLAN_TIERS, SNACK_MODES, setSnack, setSnackPicks, setTier, useCustomWeek, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { SNACK_CATALOG, SNACK_GROUPS } from '../data/godDiet';
 
 export function SnackSwitcher({ dark = false }) {
@@ -25,26 +25,44 @@ export function SnackSwitcher({ dark = false }) {
 }
 
 export function SnackKindPicker({ dark = false }) {
-  const pick = useSnackPick();
+  const picks = useSnackPicks();
   const snack = useSnack();
+  const [open, setOpen] = useState(false);
+  const toggle = (id) => {
+    setSnackPicks(picks.includes(id) ? picks.filter((p) => p !== id) : [...picks, id]);
+  };
+  const summary = picks.length === 0 ? 'None picked' : picks.length === 1 ? (SNACK_CATALOG.find((s) => s.id === picks[0]) || {}).name : `${picks.length} kinds picked`;
   return (
-    <div className="flex items-center gap-1.5" role="group" aria-label="Snack kind">
-      <span className={`text-[11px] font-bold uppercase tracking-wide ${dark ? 'text-pine-50/70' : 'text-ink/50'}`}>Kind</span>
-      <select
-        value={pick}
+    <div className="relative flex items-center gap-1.5" role="group" aria-label="Snack kinds">
+      <span className={`text-[11px] font-bold uppercase tracking-wide ${dark ? 'text-pine-50/70' : 'text-ink/50'}`}>Kinds</span>
+      <button
+        onClick={() => setOpen(!open)}
         disabled={snack === 'off'}
-        onChange={(e) => setSnackPick(e.target.value)}
-        aria-label="Which snack"
-        className={`max-w-[190px] rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-40 ${dark ? 'bg-white/10 text-white' : 'bg-ink/5 text-ink/80'}`}
+        aria-expanded={open}
+        className={`max-w-[210px] truncate rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-40 ${dark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-ink/5 text-ink/80 hover:bg-ink/10'}`}
       >
-        {SNACK_GROUPS.map((g) => (
-          <optgroup key={g} label={g}>
-            {SNACK_CATALOG.filter((s) => s.group === g).map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+        {summary}
+      </button>
+      {open && snack !== 'off' && (
+        <>
+          <button className="fixed inset-0 z-40 cursor-default" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-50 mt-2 max-h-[60vh] w-72 overflow-y-auto rounded-2xl border border-ink/10 bg-cream p-3 shadow-xl">
+            <p className="px-1 pb-2 text-[11px] font-semibold leading-snug text-ink/55">Pick as many or as few as you want. They rotate across the snack days in the order you pick them.</p>
+            {SNACK_GROUPS.map((g) => (
+              <div key={g} className="mb-2">
+                <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wide text-ink/45">{g}</p>
+                {SNACK_CATALOG.filter((s) => s.group === g).map((s) => (
+                  <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-medium text-ink/80 hover:bg-pine-50">
+                    <input type="checkbox" checked={picks.includes(s.id)} onChange={() => toggle(s.id)} className="h-4 w-4 shrink-0 accent-pine-800" />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
             ))}
-          </optgroup>
-        ))}
-      </select>
+            <button onClick={() => setOpen(false)} className="mt-1 w-full rounded-full bg-pine-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-pine-700">Done</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -122,8 +140,8 @@ export function Header() {
 export function CustomWeekBanner() {
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const [custom, , clear] = useCustomWeek(tier, snack, pick);
+  const picks = useSnackPicks();
+  const [custom, , clear] = useCustomWeek(tier, snack, picks);
   if (!custom) return null;
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-pine-200 bg-pine-50 px-4 py-3">

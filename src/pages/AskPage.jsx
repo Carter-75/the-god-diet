@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Check, ExternalLink, RotateCcw, Send, X } from 'lucide-react';
 import { dayNutrition, mealCost, mealFromSpec, mealNutrition, money, rebalanceMeals, weekCost, TIER_RANGES } from '../data/godDiet';
 import { mealIngredients, useHead } from '../lib/store';
-import { useCustomWeek, usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { useCustomWeek, usePlanMeals, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { CustomWeekBanner } from '../components/Chrome';
 
 const STARTERS = [
@@ -16,9 +16,9 @@ export default function AskPage() {
   useHead({ title: 'Ask - The God Diet', description: 'Ask about the diet or ask for a change to your week. The assistant picks from the meal database and the site checks every number itself.' });
   const tier = useTier();
   const snack = useSnack();
-  const pick = useSnackPick();
-  const { meals, isCustom } = usePlanMeals(tier, snack, pick);
-  const [, setCustom, clearCustom] = useCustomWeek(tier, snack, pick);
+  const picks = useSnackPicks();
+  const { meals, isCustom } = usePlanMeals(tier, snack, picks);
+  const [, setCustom, clearCustom] = useCustomWeek(tier, snack, picks);
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Ask me anything about the diet, or tell me a change you want: a sandwich, a swap from the meal library, a cheaper day. I draft it, and the site checks the calories, the price, and the links itself before you apply anything.' },
   ]);
@@ -38,13 +38,13 @@ export default function AskPage() {
       if (idx >= 0) candidate[idx] = nm; else candidate.push(nm);
       newMeals.push(nm);
     }
-    const rb = rebalanceMeals(candidate, tier, snack, pick);
+    const rb = rebalanceMeals(candidate, tier, snack, picks);
     return {
       ...rb, newMeals,
       beforeDay: dayNutrition(meals), beforeCost: weekCost(meals),
       afterDay: dayNutrition(rb.meals), afterCost: weekCost(rb.meals),
     };
-  }, [proposal, meals, tier, snack, pick]);
+  }, [proposal, meals, tier, snack, picks]);
 
   const scrollDown = () => setTimeout(() => bottomRef.current && bottomRef.current.scrollIntoView({ behavior: 'smooth' }), 60);
 
