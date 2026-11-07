@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Beef, Menu, X } from 'lucide-react';
 import { SITE, TAGLINE } from '../lib/store';
-import { PLAN_TIERS, SNACK_MODES, setSnack, setTier, useCustomWeek, useSnack, useTier } from '../lib/plan';
+import { PLAN_TIERS, SNACK_MODES, setSnack, setSnackPick, setTier, useCustomWeek, useSnack, useSnackPick, useTier } from '../lib/plan';
+import { SNACK_CATALOG, SNACK_GROUPS } from '../data/godDiet';
 
 export function SnackSwitcher({ dark = false }) {
   const snack = useSnack();
@@ -19,6 +20,31 @@ export function SnackSwitcher({ dark = false }) {
           {m.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+export function SnackKindPicker({ dark = false }) {
+  const pick = useSnackPick();
+  const snack = useSnack();
+  return (
+    <div className="flex items-center gap-1.5" role="group" aria-label="Snack kind">
+      <span className={`text-[11px] font-bold uppercase tracking-wide ${dark ? 'text-pine-50/70' : 'text-ink/50'}`}>Kind</span>
+      <select
+        value={pick}
+        disabled={snack === 'off'}
+        onChange={(e) => setSnackPick(e.target.value)}
+        aria-label="Which snack"
+        className={`max-w-[190px] rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-40 ${dark ? 'bg-white/10 text-white' : 'bg-ink/5 text-ink/80'}`}
+      >
+        {SNACK_GROUPS.map((g) => (
+          <optgroup key={g} label={g}>
+            {SNACK_CATALOG.filter((s) => s.group === g).map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
     </div>
   );
 }
@@ -76,9 +102,10 @@ export function Header() {
           </button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-ink/5 py-2">
-          <span className="text-[11px] font-semibold text-ink/50">Same 21 meals, three sizes, one optional snack. Pick yours:</span>
+          <span className="text-[11px] font-semibold text-ink/50">Same 21 meals, three sizes, and a snack you pick. Set yours:</span>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <SnackSwitcher />
+            <SnackKindPicker />
             <PlanSwitcher />
           </div>
         </div>
@@ -95,7 +122,8 @@ export function Header() {
 export function CustomWeekBanner() {
   const tier = useTier();
   const snack = useSnack();
-  const [custom, , clear] = useCustomWeek(tier, snack);
+  const pick = useSnackPick();
+  const [custom, , clear] = useCustomWeek(tier, snack, pick);
   if (!custom) return null;
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-pine-200 bg-pine-50 px-4 py-3">

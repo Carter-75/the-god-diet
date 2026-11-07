@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check, Clock3, Copy, ExternalLink } from 'lucide
 import Missing from './Missing';
 import { TALLOW_LABEL, mealNutrition, mealsForTier, planRates } from '../data/godDiet';
 import { mealById, mealCost, mealIngredients, money, recipeText, TALLOW_TSP, useHead } from '../lib/store';
-import { usePlanMeals, useSnack, useTier } from '../lib/plan';
+import { usePlanMeals, useSnack, useSnackPick, useTier } from '../lib/plan';
 
 const SLOT_TINT = {
   Morning: 'bg-amber-100 text-amber-900',
@@ -17,7 +17,8 @@ export default function MealPage() {
   const { mealId } = useParams();
   const tier = useTier();
   const snack = useSnack();
-  const { meals: tierMeals } = usePlanMeals(tier, snack);
+  const pick = useSnackPick();
+  const { meals: tierMeals } = usePlanMeals(tier, snack, pick);
   const meal = mealById(mealId, tier, snack, tierMeals);
   const tallowPoolOz = Math.round(planRates(tier, snack, tierMeals).tallowOz * 10) / 10;
   const [copied, setCopied] = useState(false);
@@ -27,7 +28,7 @@ export default function MealPage() {
   const prev = tierMeals[(idx + tierMeals.length - 1) % tierMeals.length];
   const next = tierMeals[(idx + 1) % tierMeals.length];
   const copy = async () => {
-    try { await navigator.clipboard.writeText(recipeText(meal, tier, snack)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { setCopied(false); }
+    try { await navigator.clipboard.writeText(recipeText(meal, tier, snack, pick)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { setCopied(false); }
   };
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10">

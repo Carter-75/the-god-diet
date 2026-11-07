@@ -279,7 +279,7 @@ export const SNACK = {
   guacOz: 3,
   bagOz: 6,
   name: 'Guac and Chips',
-  description: 'The one snack: fresh guacamole and a label serving of the chips that pass. The guacamole is tonight\'s avocado served early, 3 oz of the evening avocado mashed with salt and lemon, so the avocado pool never changes. The chips are Boulder Canyon Thin & Crispy, the approved bag: potatoes, avocado oil, sea salt.',
+  description: 'The original snack: fresh guacamole and a label serving of the chips that pass. The guacamole is tonight\'s avocado served early, 3 oz of the evening avocado mashed with salt and lemon, so the avocado pool never changes. The chips are Boulder Canyon Thin & Crispy, the approved bag: potatoes, avocado oil, sea salt.',
   steps: [
     'Scoop 3 oz of avocado (about three quarters of one avocado) into a bowl. That avocado comes out of tonight\'s evening meal, which keeps the rest of its avocado.',
     'Mash it rough with a fork, Celtic sea salt, and a squeeze of lemon. That is the whole guacamole: nothing in it that is not already in the diet.',
@@ -310,7 +310,249 @@ function snackMeal(day) {
     fruit: 'Avocado', fruitOz: SNACK.guacOz, chips: SNACK.chipsOz,
     blueberries: 0, broccoli: 0, flax: 0, broth: 0, bread: 0, wrap: 0, tallow: 'no',
     coconutWater: 0, ketchup: 0, mayo: 0, mustard: 0, honey: 0, oliveOil: 0, pickles: 0, psyllium: 0,
+    snackPick: 'guac',
   };
+}
+
+// The snack picker (added Nov 7, 2026 at Carter's direction): guac and chips
+// is no longer the only snack. Every snack below passed the checked database
+// the same way the meals did: whole fruit blended with nothing added for the
+// packs and purees (hard seeds out, per Carter's seed rule; the tiny soft
+// berry kind of seed does not count), the two Pitaya pops whose only extra is
+// ascorbic acid (vitamin C itself, ruled into the approved preservative class
+// on Nov 7, 2026), one applesauce that is literally just apples, and homemade
+// snacks built from the pool's own ingredients. Product nutrition is USDA
+// reference for the fruit itself, since a puree pack is the whole fruit and
+// nothing else; costs are per serving from the checked prices, estimates
+// where the seller sells by the case or the box. Picking a snack other than
+// guac runs the week through balanceSnackWeek below, which makes room with
+// the same levers the plan trims use (tallow pool, banana and kiwi, then egg
+// and cheese) until the day average lands back inside Carter's range.
+const pureeSteps = (fruit) => [
+  'Thaw one serving in the fridge overnight, or under cool water for a few minutes.',
+  `Pour it into a glass and drink it as it is. This is Carter's juice: the whole ${fruit} blended, everything in it, nothing added.`,
+  'Eat it between the midday and evening meals, on the snack days your setting picks.',
+];
+export const SNACK_CATALOG = [
+  { id: 'guac', name: 'Guac and Chips', group: 'The original', special: true },
+  { id: 'dragon-fruit-pack', name: 'Dragon Fruit Juice Pack', group: 'Frozen juice packs',
+    description: 'One ingredient: organic red dragon fruit puree, seeds in (the tiny soft kind, strawberry class). A frozen pack from Pitaya Foods, the cleanest juice found anywhere: the whole fruit blended, nothing removed, nothing added.',
+    steps: pureeSteps('dragon fruit'), minutes: 2,
+    fixedNutrition: { kcal: 60, protein: 1, fat: 0, carbs: 13, fiber: 2.9 }, fixedCost: 1.50,
+    portionText: '1 frozen pack (3.5 oz)', unitLabel: '4-pack of 3.5 oz packs', servingsPerUnit: 4,
+    poolItem: 'Dragon fruit puree packs', poolText: 'Pitaya Foods frozen packs, one ingredient. They ship frozen from pitayafoods.com (8 frozen items minimum per order).',
+    buy: { label: 'Good Eggs (Pitaya Foods dragon fruit smoothie packs)', url: 'https://www.goodeggs.com/pitayafoods/organic-dragon-fruit-smoothie-packs/65f08e0d20c1530012f2b5f4' } },
+  { id: 'coconut-pack', name: 'Coconut Juice Pack', group: 'Frozen juice packs',
+    description: 'Organic coconut puree: coconut meat and coconut water, the whole coconut blended and frozen by Pitaya Foods. The pack twin of the approved Harmless Harvest coconut smoothie bottle.',
+    steps: pureeSteps('coconut'), minutes: 2,
+    fixedNutrition: { kcal: 186, protein: 2, fat: 17, carbs: 10, fiber: 5 }, fixedCost: 1.50,
+    portionText: '1 frozen pack (3.5 oz)', unitLabel: '4-pack of 3.5 oz packs', servingsPerUnit: 4,
+    poolItem: 'Coconut puree packs', poolText: 'Pitaya Foods frozen packs: coconut meat and coconut water, nothing else. They ship frozen from pitayafoods.com.',
+    buy: { label: 'Pitaya Foods (organic coconut smoothie packs)', url: 'https://www.pitayafoods.com/products/organic-coconut-smoothie-packs' } },
+  { id: 'acai-pack', name: 'Acai Puree Pack', group: 'Frozen juice packs',
+    description: 'Unsweetened acai puree with a pinch of citric acid, the lemon class of preservative. Only the Pitaya and Amafruits packs: the famous Sambazon unsweetened pack adds sunflower lecithin and is banned in the checked database.',
+    steps: pureeSteps('acai'), minutes: 2,
+    fixedNutrition: { kcal: 65, protein: 2, fat: 5, carbs: 4, fiber: 4.5 }, fixedCost: 2.00,
+    portionText: '1 frozen pack (3.5 oz)', unitLabel: 'bag of 3.5 oz packs', servingsPerUnit: 20,
+    poolItem: 'Acai puree packs (unsweetened)', poolText: 'Pitaya Foods or Amafruits pure unsweetened packs only. Never the Sambazon pack: it carries sunflower lecithin.',
+    buy: { label: 'Amafruits (pure and unsweetened acai packs)', url: 'https://amafruits.com' } },
+  { id: 'acerola-pack', name: 'Acerola Juice Pack', group: 'Frozen juice packs',
+    description: 'One ingredient: organic acerola puree from Amafruits, who strain the seeds out and add nothing. Acerola is one of the most vitamin C rich fruits there is.',
+    steps: pureeSteps('acerola cherry'), minutes: 2,
+    fixedNutrition: { kcal: 32, protein: 0, fat: 0, carbs: 8, fiber: 1.1 }, fixedCost: 2.50,
+    portionText: '1 frozen pack (3.5 oz)', unitLabel: 'bag of 3.5 oz packs', servingsPerUnit: 20,
+    poolItem: 'Acerola puree packs', poolText: 'Amafruits packs, shipped frozen from their Illinois warehouse by FedEx, about $49.98 for 20 packs.',
+    buy: { label: 'Amafruits (acerola pure and unsweetened packs)', url: 'https://amafruits.com' } },
+  { id: 'guava-pack', name: 'Pink Guava Juice Pack', group: 'Frozen juice packs',
+    description: 'One ingredient: organic pink guava puree from Amafruits, deseeded (guava seeds are the hard kind, so they come out before the pack is made) and nothing added.',
+    steps: pureeSteps('pink guava'), minutes: 2,
+    fixedNutrition: { kcal: 68, protein: 3, fat: 1, carbs: 14, fiber: 5.4 }, fixedCost: 2.50,
+    portionText: '1 frozen pack (3.5 oz)', unitLabel: 'bag of 3.5 oz packs', servingsPerUnit: 20,
+    poolItem: 'Pink guava puree packs', poolText: 'Amafruits packs, shipped frozen from Illinois by FedEx, about $49.98 for 20 packs.',
+    buy: { label: 'Amafruits (pink guava purees)', url: 'https://amafruits.com/products/pink-guava-purees' } },
+  { id: 'goya-mango', name: 'Mango Pulp (Goya)', group: 'Purees by mail and bulk',
+    description: 'Goya frozen mango pulp: mango, with ascorbic and citric acid as preservatives, both in the approved class (vitamin C and lemon\'s own acid). The pit is out by the nature of pulp. Ships by mail in 14 oz bags.',
+    steps: pureeSteps('mango'), minutes: 2,
+    fixedNutrition: { kcal: 60, protein: 1, fat: 0, carbs: 15, fiber: 1.6 }, fixedCost: 1.05,
+    portionText: '3.5 oz of pulp (a quarter of the 14 oz bag)', unitLabel: '14 oz bag', servingsPerUnit: 4,
+    poolItem: 'Mango pulp (Goya)', poolText: 'Goya frozen pulp bags, shipped by mail from FoodServiceDirect (cases of 12) or MamaFoods.',
+    buy: { label: 'FoodServiceDirect (Goya frozen fruit pulps)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'goya-pineapple', name: 'Pineapple Pulp (Goya)', group: 'Purees by mail and bulk',
+    description: 'Goya frozen pineapple pulp: pineapple and ascorbic acid (vitamin C), nothing else. This is the one passing pineapple anywhere: the bulk pineapple puree from Oregon Fruit sneaks pineapple juice into its ingredients and is banned.',
+    steps: pureeSteps('pineapple'), minutes: 2,
+    fixedNutrition: { kcal: 50, protein: 1, fat: 0, carbs: 13, fiber: 1.4 }, fixedCost: 1.05,
+    portionText: '3.5 oz of pulp (a quarter of the 14 oz bag)', unitLabel: '14 oz bag', servingsPerUnit: 4,
+    poolItem: 'Pineapple pulp (Goya)', poolText: 'Goya frozen pulp bags, shipped by mail from FoodServiceDirect or MamaFoods.',
+    buy: { label: 'FoodServiceDirect (Goya frozen fruit pulps)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'goya-blackberry', name: 'Blackberry Pulp (Goya)', group: 'Purees by mail and bulk',
+    description: 'Goya frozen blackberry (mora) pulp: blackberry pulp and nothing else on the label. Berry seeds are the tiny soft kind Carter\'s rule allows, and they ride along in the pulp.',
+    steps: pureeSteps('blackberry'), minutes: 2,
+    fixedNutrition: { kcal: 43, protein: 1, fat: 1, carbs: 10, fiber: 5.3 }, fixedCost: 1.05,
+    portionText: '3.5 oz of pulp (a quarter of the 14 oz bag)', unitLabel: '14 oz bag', servingsPerUnit: 4,
+    poolItem: 'Blackberry pulp (Goya)', poolText: 'Goya frozen pulp bags, shipped by mail from FoodServiceDirect or MamaFoods.',
+    buy: { label: 'FoodServiceDirect (Goya frozen fruit pulps)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'goya-strawberry', name: 'Strawberry Pulp (Goya)', group: 'Purees by mail and bulk',
+    description: 'Goya frozen strawberry (fresa) pulp: strawberry pulp and nothing else on the label. The whole berry blended, seeds and all, and strawberry seeds are the tiny soft kind.',
+    steps: pureeSteps('strawberry'), minutes: 2,
+    fixedNutrition: { kcal: 32, protein: 1, fat: 0, carbs: 8, fiber: 2 }, fixedCost: 1.05,
+    portionText: '3.5 oz of pulp (a quarter of the 14 oz bag)', unitLabel: '14 oz bag', servingsPerUnit: 4,
+    poolItem: 'Strawberry pulp (Goya)', poolText: 'Goya frozen pulp bags, shipped by mail from FoodServiceDirect or MamaFoods.',
+    buy: { label: 'FoodServiceDirect (Goya frozen fruit pulps)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'oregon-mango', name: 'Mango Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit mango puree, and the ingredient list is one word: mango. Aseptic and shelf-stable in an 11 lb box, seedless through the maker\'s screen, which is what Carter\'s seed rule wants for a pitted fruit.',
+    steps: pureeSteps('mango'), minutes: 2,
+    fixedNutrition: { kcal: 68, protein: 1, fat: 0, carbs: 17, fiber: 1.8 }, fixedCost: 0.73,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Mango puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $32 for the 11 lb box at oregonfruit.com. One box covers about 11 weeks of daily snacks.',
+    buy: { label: 'Oregon Fruit (mango puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-raspberry', name: 'Raspberry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit red raspberry puree: red raspberries, nothing else. Seedless through the maker\'s screen; raspberry seeds are the tiny soft kind anyway.',
+    steps: pureeSteps('raspberry'), minutes: 2,
+    fixedNutrition: { kcal: 59, protein: 1, fat: 1, carbs: 14, fiber: 7.4 }, fixedCost: 1.11,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Raspberry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $49 for the 11 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (red raspberry puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-blackberry', name: 'Blackberry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit blackberry puree: blackberries, nothing else. The maker\'s spec sheet says this one is a marionberry and blackberry blend under the blackberry name; both are approved berries.',
+    steps: pureeSteps('blackberry'), minutes: 2,
+    fixedNutrition: { kcal: 49, protein: 2, fat: 1, carbs: 11, fiber: 6 }, fixedCost: 0.89,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Blackberry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $39 for the 11 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (blackberry puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-loganberry', name: 'Loganberry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit loganberry puree: 100% loganberries. Sold only in the big 42 lb box, so this is the committed berry fan\'s pick.',
+    steps: pureeSteps('loganberry'), minutes: 2,
+    fixedNutrition: { kcal: 62, protein: 2, fat: 0, carbs: 15, fiber: 6 }, fixedCost: 1.06,
+    portionText: '4 oz of puree (from the 42 lb box)', unitLabel: '42 lb box', servingsPerUnit: 168,
+    poolItem: 'Loganberry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $179 for the 42 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (loganberry puree, 42 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-marionberry', name: 'Marionberry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit marionberry puree: 100% marionberries, nothing else. Buy this plain one, never the Filter-Friendly variant, which is run through enzyme processing aids.',
+    steps: pureeSteps('marionberry'), minutes: 2,
+    fixedNutrition: { kcal: 57, protein: 2, fat: 1, carbs: 13, fiber: 6 }, fixedCost: 2.55,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Marionberry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $112 for the 11 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (marionberry puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-strawberry', name: 'Strawberry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit strawberry puree: strawberries, nothing else, seedless through the maker\'s screen.',
+    steps: pureeSteps('strawberry'), minutes: 2,
+    fixedNutrition: { kcal: 36, protein: 1, fat: 0, carbs: 9, fiber: 2.3 }, fixedCost: 0.91,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Strawberry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $40 for the 11 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (strawberry puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'oregon-cherry', name: 'Dark Sweet Cherry Puree (Oregon Fruit)', group: 'Purees by mail and bulk',
+    description: 'Oregon Fruit dark sweet cherry puree: Bings, Lamberts, Vans and Royal Anne cherries, pits out, nothing else. The cheapest box on the list.',
+    steps: pureeSteps('cherry'), minutes: 2,
+    fixedNutrition: { kcal: 71, protein: 1, fat: 0, carbs: 18, fiber: 2.4 }, fixedCost: 0.66,
+    portionText: '4 oz of puree (from the 11 lb box)', unitLabel: '11 lb box', servingsPerUnit: 44,
+    poolItem: 'Cherry puree (Oregon Fruit)', poolText: 'Oregon Fruit aseptic puree, about $29 for the 11 lb box at oregonfruit.com.',
+    buy: { label: 'Oregon Fruit (dark sweet cherry puree, 11 lb)', url: 'https://oregonfruit.com' } },
+  { id: 'pitaya-pops-dragon-mango', name: 'Dragon Fruit Mango Pops (Pitaya)', group: 'Popsicles',
+    description: 'Pitaya Foods smoothie pops: fruit purees only, dragon fruit and mango, with under 0.5% ascorbic acid (vitamin C) as the antioxidant. Vitamin C is the fruit\'s own molecule and was ruled into the approved class on Nov 7, 2026.',
+    steps: ['Take one pop from the freezer and let it sit a minute so it releases from the mold.', 'Eat it between the midday and evening meals, on the snack days your setting picks.'], minutes: 1,
+    fixedNutrition: { kcal: 55, protein: 1, fat: 0, carbs: 14, fiber: 1.5 }, fixedCost: 1.50,
+    portionText: '1 pop', unitLabel: null, servingsPerUnit: null,
+    poolItem: 'Dragon fruit mango pops (Pitaya)', poolText: 'Pitaya Foods smoothie pops, sold by the case at FoodServiceDirect.',
+    buy: { label: 'FoodServiceDirect (Pitaya smoothie pops)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'pitaya-pops-passion-peach', name: 'Passion Fruit Peach Pops (Pitaya)', group: 'Popsicles',
+    description: 'Pitaya Foods smoothie pops: fruit purees only, passion fruit and peach, with under 0.5% ascorbic acid (vitamin C). The passion fruit is the brand\'s seedless puree, so the hard seeds are already out.',
+    steps: ['Take one pop from the freezer and let it sit a minute so it releases from the mold.', 'Eat it between the midday and evening meals, on the snack days your setting picks.'], minutes: 1,
+    fixedNutrition: { kcal: 55, protein: 1, fat: 0, carbs: 14, fiber: 1.5 }, fixedCost: 1.50,
+    portionText: '1 pop', unitLabel: null, servingsPerUnit: null,
+    poolItem: 'Passion fruit peach pops (Pitaya)', poolText: 'Pitaya Foods smoothie pops, sold by the case at FoodServiceDirect.',
+    buy: { label: 'FoodServiceDirect (Pitaya smoothie pops)', url: 'https://www.foodservicedirect.com' } },
+  { id: 'north-coast-applesauce', name: 'Applesauce (North Coast)', group: 'From the jar',
+    description: 'North Coast organic applesauce: organic apples, and the brand states it adds nothing else, not even ascorbic acid, and never uses concentrate. Applesauce is peeled and cooked by its nature; Carter approved this jar anyway on Nov 7, 2026.',
+    steps: ['Spoon 4 oz (about half a cup) into a bowl.', 'Eat it cold, between the midday and evening meals, on the snack days your setting picks.'], minutes: 2,
+    fixedNutrition: { kcal: 48, protein: 0, fat: 0, carbs: 13, fiber: 1.2 }, fixedCost: 0.75,
+    portionText: '4 oz (about half a cup)', unitLabel: 'jar (about 24 oz)', servingsPerUnit: 6,
+    poolItem: 'Applesauce (North Coast)', poolText: 'North Coast organic applesauce jars: organic apples and nothing else.',
+    buy: { label: 'Amazon (North Coast organic applesauce)', url: 'https://www.amazon.com/s?k=North+Coast+organic+applesauce' } },
+  { id: 'creami-banana-honey', name: 'Banana Honey CREAMi', group: 'Homemade', homemade: true,
+    description: 'A Ninja CREAMi pint built from the pool: banana blended with coconut water, raw manuka honey, pure vanilla and a pinch of Celtic sea salt, frozen hard and spun. Real ice cream texture with nothing in it that is not already in the diet.',
+    steps: [
+      'The day before: blend the banana with the coconut water, the honey, a drop of pure vanilla extract and a pinch of Celtic sea salt until smooth.',
+      'Pour it into a CREAMi pint, freeze it flat for 24 hours, uncovered lid on.',
+      'Spin on Lite Ice Cream. If it comes out powdery, add a splash of coconut water and re-spin once.',
+      'Eat the pint (about 8 oz) between the midday and evening meals. Its banana, honey and coconut water are counted in the pool above.',
+    ], minutes: 10, fruitName: 'Banana', fruitOz: 4, honey: 2, coconutWater: 4 },
+  { id: 'creami-blueberry', name: 'Wild Blueberry CREAMi', group: 'Homemade', homemade: true,
+    description: 'A Ninja CREAMi pint of wild blueberries and banana blended with coconut water, frozen and spun. The blueberries are the diet\'s own frozen wild ones.',
+    steps: [
+      'The day before: blend the blueberries and banana with the coconut water and a pinch of Celtic sea salt until smooth.',
+      'Pour it into a CREAMi pint and freeze it flat for 24 hours.',
+      'Spin on Sorbet or Lite Ice Cream. Re-spin once with a splash of coconut water if it is powdery.',
+      'Eat the pint (about 8 oz) between the midday and evening meals. Its fruit and coconut water are counted in the pool above.',
+    ], minutes: 10, fruitName: 'Banana', fruitOz: 2, blueberries: 4, coconutWater: 4 },
+  { id: 'smoothie-banana-berry', name: 'Banana Berry Smoothie (Homemade)', group: 'Homemade', homemade: true,
+    description: 'Carter\'s smoothie, his way: whole banana and wild blueberries blended plain, nothing added, no lemon, no freezing. Blend and drink.',
+    steps: [
+      'Put the banana and the frozen wild blueberries in the blender. No liquid, no ice, nothing else.',
+      'Blend until completely smooth, about a minute.',
+      'Drink it right away, between the midday and evening meals.',
+    ], minutes: 5, fruitName: 'Banana', fruitOz: 4, blueberries: 2 },
+  { id: 'pops-kiwi-coconut', name: 'Kiwi Coconut Pops (Homemade)', group: 'Homemade', homemade: true,
+    description: 'Homemade popsicles: kiwi blended with coconut water and frozen in molds. One batch of double the amounts below makes 8 pops; a snack is 2.',
+    steps: [
+      'Blend double the listed kiwi and coconut water (5 oz kiwi, 4 oz coconut water) with a pinch of Celtic sea salt until smooth.',
+      'Pour into 8 popsicle molds and freeze at least 6 hours.',
+      'A snack is 2 pops, between the midday and evening meals.',
+    ], minutes: 10, fruitName: 'Kiwi', fruitOz: 2.5, coconutWater: 2 },
+  { id: 'pops-blueberry-banana', name: 'Blueberry Banana Pops (Homemade)', group: 'Homemade', homemade: true,
+    description: 'Homemade popsicles: banana and wild blueberries blended plain and frozen in molds. One batch of double the amounts below makes 8 pops; a snack is 2.',
+    steps: [
+      'Blend double the listed banana and blueberries (4 oz banana, 2 oz blueberries) until completely smooth. Nothing added.',
+      'Pour into 8 popsicle molds and freeze at least 6 hours.',
+      'A snack is 2 pops, between the midday and evening meals.',
+    ], minutes: 10, fruitName: 'Banana', fruitOz: 2, blueberries: 1 },
+];
+export const SNACK_BY_ID = Object.fromEntries(SNACK_CATALOG.map((s) => [s.id, s]));
+export const SNACK_GROUPS = [...new Set(SNACK_CATALOG.map((s) => s.group))];
+
+function catalogSnackMeal(entry, day) {
+  return {
+    id: `snack-${entry.id}-d${day}`, day, slot: 'Snack', name: entry.name,
+    description: entry.description, steps: entry.steps, minutes: entry.minutes || 5,
+    beef: 0, egg: 0, sardines: 0, salmon: 0, cheese: 0,
+    fruit: entry.fruitName || 'Banana', fruitOz: entry.fruitOz || 0, chips: 0,
+    blueberries: entry.blueberries || 0, broccoli: 0, flax: 0, broth: 0, bread: 0, wrap: 0, tallow: 'no',
+    coconutWater: entry.coconutWater || 0, ketchup: 0, mayo: 0, mustard: 0, honey: entry.honey || 0, oliveOil: 0, pickles: 0, psyllium: 0,
+    snackPick: entry.id, homemade: !!entry.homemade,
+    ...(entry.fixedNutrition ? { fixedNutrition: entry.fixedNutrition, fixedCost: entry.fixedCost } : {}),
+  };
+}
+
+// Make room for a catalog snack: same levers as the plan trims, in the same
+// order (tallow pool first, then banana and kiwi, then whole eggs, then
+// cheese in quarter ounces), applied to the 21 meals only, until the day
+// average is back at the snack-off target or inside Carter's range.
+function balanceSnackWeek(meals, tier) {
+  const [lo, hi] = TIER_RANGES[tier] || TIER_RANGES[2500];
+  const target = dayNutrition(mealsForTier(tier, 'off')).kcal;
+  const cap = Math.min(hi, target + 6);
+  if (dayNutrition(meals).kcal <= cap) return meals;
+  let poolOz = meals.reduce((s, m) => s + (m.tallowOz || 0), 0);
+  const applyPool = () => {
+    const units = meals.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
+    for (const m of meals) m.tallowOz = units ? (TALLOW_UNIT_MAP[m.tallow] / units) * poolOz : 0;
+  };
+  const cuttable = (m) => m.slot !== 'Snack';
+  let fruitTrim = 0;
+  let guard = 0;
+  while (dayNutrition(meals).kcal > cap && guard++ < 300) {
+    if (poolOz > 0.5) { poolOz = Math.max(0.5, Math.round((poolOz - 0.5) * 10) / 10); applyPool(); continue; }
+    if (fruitTrim < 2) {
+      let touched = false;
+      for (const m of meals) if (cuttable(m) && (m.fruit === 'Banana' || m.fruit === 'Kiwi') && m.fruitOz > 2) { m.fruitOz = Math.max(2, Math.round((m.fruitOz - 0.5) * 10) / 10); touched = true; }
+      if (touched) { fruitTrim += 0.5; continue; }
+    }
+    const em = meals.find((m) => cuttable(m) && m.egg >= 3.5);
+    if (em) { em.egg = 1.75; continue; }
+    const cm = meals.find((m) => cuttable(m) && m.cheese > 0);
+    if (cm) { cm.cheese = Math.round((cm.cheese - 0.25) * 100) / 100; continue; }
+    break;
+  }
+  return meals;
 }
 export const TIER_OVERRIDES = {
   // The 2,000 plan keeps the beef exactly as the 2,500 plan (quarter-pound
@@ -413,14 +655,27 @@ const TALLOW_UNIT_MAP = { yes: 1, double: 2, light: 0.5, no: 0 };
 export const TIER_FRUIT_TRIM = { 1500: 0.5, 2000: 1, 2500: 0 };
 
 // The 21 meals at one plan size, with each meal's tallow share in ounces
-// resolved from that size's tallow pool.
-export function mealsForTier(tier = 2500, snack = 'off') {
+// resolved from that size's tallow pool. A snack pick other than guac takes
+// the catalog path: the base week, the picked snack on the snack days, and
+// balanceSnackWeek making the room.
+export function mealsForTier(tier = 2500, snack = 'off', pick = 'guac') {
   const overrides = TIER_OVERRIDES[tier] || {};
   const merged = MEALS.map((m) => ({ ...m, ...(overrides[m.id] || {}) }));
   const baseFruitTrim = TIER_FRUIT_TRIM[tier] || 0;
   if (baseFruitTrim) {
     for (const m of merged) {
       if (m.fruit === 'Banana' || m.fruit === 'Kiwi') m.fruitOz = Math.max(2, m.fruitOz - baseFruitTrim);
+    }
+  }
+  if (snack !== 'off' && pick !== 'guac') {
+    const entry = SNACK_BY_ID[pick];
+    if (entry && !entry.special) {
+      const baseTallowOz = TIER_TALLOW_OZ[tier] ?? 4;
+      const units0 = merged.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
+      for (const m of merged) m.tallowOz = (TALLOW_UNIT_MAP[m.tallow] / units0) * baseTallowOz;
+      for (const day of SNACK_DAYS[snack]) merged.push(catalogSnackMeal(entry, day));
+      balanceSnackWeek(merged, tier);
+      return merged;
     }
   }
   let tallowOz = TIER_TALLOW_OZ[tier] ?? 4;
@@ -498,13 +753,13 @@ export function mealFromSpec(spec, day, slot) {
 
 // Adjust a modified week back into the size's calorie range using the plan
 // levers, protecting the meals flagged custom until everything else is used.
-export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off') {
+export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off', pick = 'guac') {
   const [lo, hi] = TIER_RANGES[tier] || TIER_RANGES[2500];
-  const target = dayNutrition(mealsForTier(tier, snack)).kcal;
+  const target = dayNutrition(mealsForTier(tier, snack, pick)).kcal;
   const meals = inputMeals.map((m) => ({ ...m }));
   const dayOf = () => dayNutrition(meals).kcal;
   const dayBefore = dayOf();
-  let poolOz = planRates(tier, snack).tallowOz;
+  let poolOz = planRates(tier, snack, undefined, pick).tallowOz;
   const applyPool = () => {
     const units = meals.reduce((s, m) => s + TALLOW_UNIT_MAP[m.tallow], 0);
     for (const m of meals) m.tallowOz = units ? (TALLOW_UNIT_MAP[m.tallow] / units) * poolOz : 0;
@@ -541,7 +796,7 @@ export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off') {
       break;
     }
   }
-  const basePool = planRates(tier, snack).tallowOz;
+  const basePool = planRates(tier, snack, undefined, pick).tallowOz;
   if (poolOz !== basePool) notes.push(`Tallow pool ${Math.round(basePool * 10) / 10} oz to ${Math.round(poolOz * 10) / 10} oz`);
   if (fruitTrim) notes.push(`Banana and kiwi trimmed ${fruitTrim} oz at each meal that had room`);
   if (eggCutIds.length) notes.push(`One egg fewer at ${eggCutIds.length} meal${eggCutIds.length === 1 ? '' : 's'}`);
@@ -552,8 +807,8 @@ export function rebalanceMeals(inputMeals, tier = 2500, snack = 'off') {
 
 // Weekly totals for one plan size, summed from its meals. Single source for
 // the pool table, the ingredient cards, and both order planners.
-export function planRates(tier = 2500, snack = 'off', mealsOverride) {
-  const meals = mealsOverride || mealsForTier(tier, snack);
+export function planRates(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
+  const meals = mealsOverride || mealsForTier(tier, snack, pick);
   const sum = (f) => meals.reduce((s, m) => s + (f(m) || 0), 0);
   return {
     tier,
@@ -576,6 +831,8 @@ export function planRates(tier = 2500, snack = 'off', mealsOverride) {
     avocadoPerMeal: (meals.find((m) => m.fruit === 'Avocado') || {}).fruitOz,
     tallowOz: sum((m) => m.tallowOz),
     chipsOz: sum((m) => m.chips),
+    snackServings: sum((m) => (m.slot === 'Snack' ? 1 : 0)),
+    snackPick: (meals.find((m) => m.slot === 'Snack') || {}).snackPick || (snack !== 'off' ? 'guac' : null),
     breadOz: sum((m) => m.bread),
     wrapOz: sum((m) => m.wrap),
     coconutOz: sum((m) => m.coconutWater),
@@ -594,9 +851,23 @@ const fmtOz = (n) => {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 };
 
+// The pool row for a catalog snack pick: the product itself, how many
+// servings a week the setting calls for, and where it comes from. Homemade
+// picks draw their ingredients from the pool rows themselves, so their note
+// says so instead of adding a product.
+function snackPoolRow(pickId, snack, r) {
+  const entry = SNACK_BY_ID[pickId];
+  if (!entry) return { item: 'Snack', oz: null, note: '' };
+  const freq = snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7';
+  if (entry.homemade) {
+    return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}, ${r.snackServings} servings a week, ${freq}. It is homemade from the pool's own fruit, honey and coconut water, which are already counted in the rows above.` };
+  }
+  return { item: entry.poolItem || entry.name, oz: null, note: `${entry.name}: ${r.snackServings} servings a week, ${freq}, ${entry.portionText} each. ${entry.poolText || ''}` };
+}
+
 // The weekly pool table for one plan size, same shape as POOL.
-export function poolForTier(tier = 2500, snack = 'off', mealsOverride) {
-  const r = planRates(tier, snack, mealsOverride);
+export function poolForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
+  const r = planRates(tier, snack, mealsOverride, pick);
   const base = Object.fromEntries(POOL.map((p) => [p.item, p]));
   const row = (item, oz, note) => ({ item, oz, note: note ?? base[item].note });
   return [
@@ -616,7 +887,8 @@ export function poolForTier(tier = 2500, snack = 'off', mealsOverride) {
     row('Beef tallow', r.tallowOz),
     { item: 'Einkorn sourdough', oz: r.breadOz, note: 'Homemade from Jovial organic einkorn flour. The only bread that passes: an old wheat leavened by a sourdough starter, never commercial yeast. Every store bread checked is banned. 2 oz at each of the two subs.' },
     { item: 'Cassava wraps', oz: r.wrapOz, note: 'Siete cassava flour tortillas, approved in the checked database. 2 tortillas at the egg salad wraps.' },
-    ...(snack !== 'off' ? [{ item: 'Potato chips', oz: r.chipsOz, note: `Boulder Canyon Thin & Crispy Classic Sea Salt. The snack: 1 oz (about 20 chips) with 3 oz of guacamole, ${snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}. The guacamole avocado comes out of that day's evening meal, so the avocado row above does not change.` }] : []),
+    ...(snack !== 'off' && r.snackPick === 'guac' ? [{ item: 'Potato chips', oz: r.chipsOz, note: `Boulder Canyon Thin & Crispy Classic Sea Salt. The snack: 1 oz (about 20 chips) with 3 oz of guacamole, ${snack === 'daily' ? 'every day' : 'on Days 1, 3, 5 and 7'}. The guacamole avocado comes out of that day's evening meal, so the avocado row above does not change.` }] : []),
+    ...(snack !== 'off' && r.snackPick && r.snackPick !== 'guac' ? [snackPoolRow(r.snackPick, snack, r)] : []),
     row('Celtic sea salt', null),
     row('Water', null),
   ];
@@ -624,8 +896,8 @@ export function poolForTier(tier = 2500, snack = 'off', mealsOverride) {
 
 // The ingredient cards for one plan size: same sources and details, with the
 // weekly amount for that size.
-export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride) {
-  const r = planRates(tier, snack, mealsOverride);
+export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride, pick = 'guac') {
+  const r = planRates(tier, snack, mealsOverride, pick);
   const ozByName = {
     'Beef organ blend': r.beefOz, 'Eggs': r.eggOz, 'Sardines': r.sardineOz,
     'Wild sockeye salmon': r.salmonOz, 'Wild blueberries': r.blueberriesOz,
@@ -635,7 +907,7 @@ export function ingredientsForTier(tier = 2500, snack = 'off', mealsOverride) {
     'Einkorn sourdough': r.breadOz, 'Cassava wraps': r.wrapOz,
   };
   return INGREDIENTS
-    .filter((ing) => snack !== 'off' || ing.name !== 'Potato chips')
+    .filter((ing) => (snack !== 'off' && r.snackPick === 'guac') || ing.name !== 'Potato chips')
     .map((ing) => ({ ...ing, weeklyOz: ing.name === 'Potato chips' ? r.chipsOz : (ing.weeklyOz === null ? null : (ozByName[ing.name] ?? ing.weeklyOz)) }));
 }
 
@@ -725,6 +997,9 @@ export const PRICE_BASIS = [
   'Potato chips (only when the snack is on): Boulder Canyon Thin & Crispy Classic Sea Salt, $2.99 for the 6 oz bag at Woodman\'s, about $0.50 an ounce. 1 oz per snack.',
   'Einkorn sourdough: homemade from Jovial organic einkorn flour, $10.59 for 32 oz at Vitacost. A finished loaf is about 68% flour by weight after the water and the bake, so the bread runs about $0.23 an ounce. 4 oz a week, 2 oz at each sub.',
   'Cassava wraps: Siete cassava flour tortillas, about $9.17 for the 7 oz pack of 8 (the Siete store sells a 6-pack for $55). 2 tortillas (1.76 oz) a week.',
+  'Snack juice packs (only when a juice pack is the picked snack): Pitaya Foods frozen packs at about $5.99 per 4-pack at retail, about $1.50 a pack; Amafruits packs at about $49.98 for 20 (about $2.50 a pack), acai at about $2.00 a pack across the two passing brands. Nutrition is USDA reference for the whole fruit, because a pack is the fruit and nothing else.',
+  'Snack purees by mail and bulk (only when one is the picked snack): Goya frozen pulp bags at about $4.19 a 14 oz bag (FoodServiceDirect case pricing), a 3.5 oz serving runs about $1.05. Oregon Fruit aseptic purees by the box: mango $32, raspberry $49, blackberry $39, strawberry $40, cherry $29, marionberry $112 per 11 lb, loganberry $179 per 42 lb; a 4 oz serving runs about $0.66 to $2.55 depending on the berry.',
+  'Snack pops and applesauce (only when one is the picked snack): Pitaya smoothie pops are sold by the case at FoodServiceDirect, estimated at about $1.50 a pop. North Coast organic applesauce, about $4.50 a jar, a 4 oz serving runs about $0.75.',
 ];
 
 const TALLOW_UNITS = { yes: 1, double: 2, light: 0.5, no: 0 };
@@ -829,6 +1104,7 @@ export function condimentCost(m) {
 }
 
 export function mealNutrition(m) {
+  if (m.fixedNutrition) return { ...m.fixedNutrition };
   const tallowOz = m.tallowOz ?? (TALLOW_UNITS[m.tallow] / TALLOW_TOTAL_UNITS) * 4;
   const parts = [
     [NUTRITION_PER_OZ.beef, m.beef],
@@ -878,6 +1154,7 @@ export const DAY_NUTRITION = {
 };
 
 export function mealCost(m) {
+  if (typeof m.fixedCost === 'number') return m.fixedCost;
   const tallowOz = m.tallowOz ?? (TALLOW_UNITS[m.tallow] / TALLOW_TOTAL_UNITS) * 4;
   return m.beef * PRICE.beefPerOz
     + m.egg * PRICE.eggPerOz
@@ -1142,10 +1419,23 @@ export function bulkOrder(weeks, eggPackSize = 12, tier = 2500, snack = 'off', m
     const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
     pantry.items.push(`Einkorn flour for the sourdough: ${flourBags} bag${flourBags === 1 ? '' : 's'} of Jovial organic einkorn (32 oz each) = ${flourBags * 32} oz for ${fmtOz(weeks * r.breadOz * 0.68)} oz of flour across the block; the bread is baked at home, one small loaf a week. Siete cassava flour tortillas: ${wrapPacks} packs (7 oz, 8 ct) = ${wrapPacks * 7} oz for ${fmtOz(weeks * r.wrapOz)} oz of wraps; they freeze well between blocks.`);
   }
-  if (snack !== 'off') {
+  if (snack !== 'off' && r.snackPick === 'guac') {
     const chipBags = Math.ceil((weeks * r.chipsOz) / SNACK.bagOz);
     const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
     pantry.items.push(`Potato chips for the snack: ${chipBags} bags of Boulder Canyon Thin & Crispy (6 oz each) = ${chipBags * SNACK.bagOz} oz for ${weeks * r.chipsOz} oz of snacks across the block; the rest of the last bag rolls into the next block. The guacamole needs no order of its own: its avocado is already in the fresh shipments.`);
+  }
+  if (snack !== 'off' && r.snackPick && r.snackPick !== 'guac') {
+    const entry = SNACK_BY_ID[r.snackPick];
+    const pantry = sources.find((x) => x.shipper.startsWith('Pantry'));
+    if (entry && entry.homemade) {
+      pantry.items.push(`${entry.name} for the snack: homemade from pool ingredients, so its fruit, honey and coconut water are already counted in the amounts above and there is nothing extra to order.`);
+    } else if (entry && entry.unitLabel) {
+      const total = weeks * r.snackServings;
+      const units = Math.ceil(total / entry.servingsPerUnit);
+      pantry.items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel} = ${units * entry.servingsPerUnit} servings for ${total} snacks across the block; the rest rolls into the next block. ${entry.poolText || ''}`);
+    } else if (entry) {
+      pantry.items.push(`${entry.name} for the snack: sold by the case; one case covers this block's ${weeks * r.snackServings} snacks with plenty left over. ${entry.poolText || ''}`);
+    }
   }
   return { totals, sources };
 }
@@ -1273,9 +1563,20 @@ export function orderSchedule(blockWeeks = 10, eggPackSize = 12, tier = 2500, sn
       `Jovial organic einkorn flour: ${flourBags} bag${flourBags === 1 ? '' : 's'} (32 oz) for the homemade sourdough`,
       `Siete cassava flour tortillas: ${wrapPacks} packs (7 oz, 8 ct)`,
     ]);
-    if (snack !== 'off') {
+    if (snack !== 'off' && r.snackPick === 'guac') {
       const chipBags = Math.ceil((blockWeeks * r.chipsOz) / SNACK.bagOz);
       byKey.get(`${w}|Pantry bulk shipment`).items.push(`Boulder Canyon Thin & Crispy chips: ${chipBags} bags (6 oz) for the snack`);
+    }
+    if (snack !== 'off' && r.snackPick && r.snackPick !== 'guac') {
+      const entry = SNACK_BY_ID[r.snackPick];
+      if (entry && entry.homemade) {
+        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: homemade, its ingredients ride the fresh and pantry orders above`);
+      } else if (entry && entry.unitLabel) {
+        const units = Math.ceil((blockWeeks * r.snackServings) / entry.servingsPerUnit);
+        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: ${units} x ${entry.unitLabel}`);
+      } else if (entry) {
+        byKey.get(`${w}|Pantry bulk shipment`).items.push(`${entry.name} for the snack: 1 case`);
+      }
     }
   }
   return [...byKey.values()].sort((a, b) => a.weekOffset - b.weekOffset || SHIPPER_ORDER.indexOf(a.shipper) - SHIPPER_ORDER.indexOf(b.shipper));

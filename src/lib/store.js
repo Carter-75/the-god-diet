@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MEALS, POOL, INGREDIENTS, BUY, DAY_NUTRITION, SNACK_TRIMS, TALLOW_TSP, TIER_TALLOW_OZ, dayNutrition, mealCost, mealsForTier, money } from '../data/godDiet';
+import { MEALS, POOL, INGREDIENTS, BUY, DAY_NUTRITION, SNACK_BY_ID, SNACK_TRIMS, TALLOW_TSP, TIER_TALLOW_OZ, dayNutrition, mealCost, mealsForTier, money, planRates } from '../data/godDiet';
 
 export const SITE = 'The God Diet';
 export const TAGLINE = 'One weekly pool. 21 meals. Nothing else.';
@@ -22,6 +22,11 @@ const BEEF_PRACTICAL = { 4: '1/4 lb', 8: '1/2 lb' };
 
 export function mealIngredients(meal) {
   const rows = [];
+  if (meal.fixedNutrition) {
+    const entry = SNACK_BY_ID[meal.snackPick];
+    rows.push({ item: meal.name, oz: null, practical: entry ? entry.portionText : '1 serving', buy: entry ? entry.buy : undefined });
+    return rows;
+  }
   if (meal.beef > 0) rows.push({ item: 'Beef organ blend', oz: meal.beef, practical: BEEF_PRACTICAL[meal.beef] || 'weighed', buy: BUY['Beef organ blend'] });
   if (meal.egg > 0) rows.push({ item: 'Egg', oz: meal.egg, practical: EGG_PRACTICAL[meal.egg] || 'weighed', buy: BUY['Egg'] });
   if (meal.sardines > 0) rows.push({ item: 'Sardines', oz: meal.sardines, practical: '1/3 of a tin, 4 fish', buy: BUY['Sardines'] });
@@ -49,9 +54,9 @@ export function mealIngredients(meal) {
 
 export { mealCost, money, TALLOW_TSP, BUY };
 
-export function recipeText(meal, tier = 2500, snack = 'off') {
-  const dn = dayNutrition(mealsForTier(tier, snack));
-  const tallowTotal = snack !== 'off' && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack] ? SNACK_TRIMS[tier][snack].tallowOz : (TIER_TALLOW_OZ[tier] ?? 4);
+export function recipeText(meal, tier = 2500, snack = 'off', pick = 'guac') {
+  const dn = dayNutrition(mealsForTier(tier, snack, pick));
+  const tallowTotal = snack !== 'off' && pick === 'guac' && SNACK_TRIMS[tier] && SNACK_TRIMS[tier][snack] ? SNACK_TRIMS[tier][snack].tallowOz : Math.round(planRates(tier, snack, undefined, pick).tallowOz * 10) / 10;
   const L = [`${meal.name} (Day ${meal.day}, ${meal.slot}) - the ${tier.toLocaleString()} calorie plan`, meal.description, '', 'Ingredients (ounces first, then the rounded amount to actually use):'];
   for (const i of mealIngredients(meal)) L.push(i.oz !== null ? `- ${i.item}: ${i.oz} oz (${i.practical})` : `- ${i.item}: ${i.practical}`);
   L.push(`- Beef tallow: ${TALLOW_TSP[meal.tallow]}${meal.tallow === 'no' ? '' : `, from the week's ${tallowTotal} oz`}`);
