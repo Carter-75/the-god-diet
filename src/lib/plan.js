@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PLAN_TIERS, SNACK_CATALOG, mealsForTier } from '../data/godDiet';
+import { PLAN_TIERS, SNACK_BY_ID, SNACK_CATALOG, mealsForTier } from '../data/godDiet';
 
 // The selected plan size (daily calorie target) is shared across every page
 // and remembered in localStorage. A window event keeps the header switcher
@@ -103,6 +103,46 @@ export function useSnackPicks() {
   return picks;
 }
 
+// The store-bought ice cream setting (Carter, Nov 12, 2026): a switch in
+// the snack section that shows or hides the forgiveness shelf, the bought
+// ice cream flavors that fail the checked rulebook but Carter allows on
+// the website (pasteurized grass-fed dairy, dates, cocoa, and the rest of
+// his forgiveness list). Off by default: the site shows the approved list,
+// and flipping it on adds the shelf. Same localStorage + window event
+// pattern as the other settings.
+const ICECREAM_KEY = 'goddiet-icecream';
+export const ICECREAM_EVENT = 'goddiet-icecream-change';
+
+export function getIceCream() {
+  try { return window.localStorage.getItem(ICECREAM_KEY) === 'on' ? 'on' : 'off'; } catch { return 'off'; }
+}
+
+export function setIceCream(v) {
+  try { window.localStorage.setItem(ICECREAM_KEY, v); } catch { /* private mode */ }
+  window.dispatchEvent(new CustomEvent(ICECREAM_EVENT, { detail: v }));
+}
+
+export function useIceCream() {
+  const [v, set] = useState(getIceCream);
+  useEffect(() => {
+    const onChange = (e) => set(typeof e.detail === 'string' ? e.detail : getIceCream());
+    window.addEventListener(ICECREAM_EVENT, onChange);
+    return () => window.removeEventListener(ICECREAM_EVENT, onChange);
+  }, []);
+  return v;
+}
+
+// The picks that actually rotate: with the ice cream switch off, the
+// store-bought shelf drops out of the rotation (stored picks are kept and
+// come back when the switch flips on). Falls back to guac if nothing
+// else remains.
+export function effectivePicks(picks, iceCream) {
+  const list = Array.isArray(picks) && picks.length ? picks : ['guac'];
+  if (iceCream === 'on') return list;
+  const filtered = list.filter((id) => !(SNACK_BY_ID[id] && SNACK_BY_ID[id].storeBought));
+  return filtered.length ? filtered : ['guac'];
+}
+
 // Custom weeks: when the Ask assistant's proposal is applied, the resulting
 // week is stored per plan size, snack setting, and snack pick, and every
 // page reads it instead of the fixed week until it is reset. Same
@@ -144,6 +184,8 @@ export function useCustomWeek(tier, snack, picks = ['guac']) {
   return [custom, (meals) => setCustomWeek(tier, snack, meals, picks), () => clearCustomWeek(tier, snack, picks)];
 }
 export function usePlanMeals(tier, snack, picks = ['guac']) {
-  const [custom] = useCustomWeek(tier, snack, picks);
-  return { meals: custom ? custom.meals : mealsForTier(tier, snack, picks), isCustom: !!custom, custom };
+  const iceCream = useIceCream();
+  const eff = effectivePicks(picks, iceCream);
+  const [custom] = useCustomWeek(tier, snack, eff);
+  return { meals: custom ? custom.meals : mealsForTier(tier, snack, eff), isCustom: !!custom, custom };
 }

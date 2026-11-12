@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Beef, Menu, X } from 'lucide-react';
 import { SITE, TAGLINE } from '../lib/store';
-import { PLAN_TIERS, SNACK_MODES, setSnack, setSnackPicks, setTier, useCustomWeek, useSnack, useSnackPicks, useTier } from '../lib/plan';
+import { PLAN_TIERS, SNACK_MODES, setIceCream, setSnack, setSnackPicks, setTier, useCustomWeek, useIceCream, useSnack, useSnackPicks, useTier } from '../lib/plan';
 import { SNACK_CATALOG, SNACK_GROUPS } from '../data/godDiet';
 
 export function SnackSwitcher({ dark = false }) {
@@ -27,6 +27,7 @@ export function SnackSwitcher({ dark = false }) {
 export function SnackKindPicker({ dark = false }) {
   const picks = useSnackPicks();
   const snack = useSnack();
+  const iceCream = useIceCream();
   const [open, setOpen] = useState(false);
   const toggle = (id) => {
     setSnackPicks(picks.includes(id) ? picks.filter((p) => p !== id) : [...picks, id]);
@@ -48,7 +49,18 @@ export function SnackKindPicker({ dark = false }) {
           <button className="fixed inset-0 z-40 cursor-default" aria-hidden="true" tabIndex={-1} onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full z-50 mt-2 max-h-[60vh] w-72 overflow-y-auto rounded-2xl border border-ink/10 bg-cream p-3 shadow-xl">
             <p className="px-1 pb-2 text-[11px] font-semibold leading-snug text-ink/55">Pick as many or as few as you want. They rotate across the snack days in the order you pick them.</p>
-            {SNACK_GROUPS.map((g) => (
+            <div className="mb-2 rounded-xl bg-pine-50 px-2 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-ink/55">Store-bought ice cream</p>
+                <div className="flex gap-1" role="group" aria-label="Store-bought ice cream">
+                  {['off', 'on'].map((v) => (
+                    <button key={v} onClick={() => setIceCream(v)} aria-pressed={iceCream === v} className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition ${iceCream === v ? 'bg-pine-800 text-white' : 'bg-ink/5 text-ink/60 hover:bg-ink/10'}`}>{v === 'on' ? 'On' : 'Off'}</button>
+                  ))}
+                </div>
+              </div>
+              <p className="pt-1 text-[11px] font-medium leading-snug text-ink/55">The forgiveness shelf: bought ice cream that fails the checked rulebook but is allowed on this website. Off, the list below is the approved snacks only.</p>
+            </div>
+            {SNACK_GROUPS.filter((g) => iceCream === 'on' || g !== 'Ice cream').map((g) => (
               <div key={g} className="mb-2">
                 <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wide text-ink/45">{g}</p>
                 {SNACK_CATALOG.filter((s) => s.group === g).map((s) => (
