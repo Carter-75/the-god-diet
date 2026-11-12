@@ -489,6 +489,13 @@ export const SNACK_CATALOG = [
       'Pour into 8 popsicle molds and freeze at least 6 hours.',
       'A snack is 2 pops, between the midday and evening meals.',
     ], minutes: 10, fruitName: 'Banana', fruitOz: 2, blueberries: 1 },
+  { id: 'ice-cream-bears', name: 'Queen & Bean Ice Cream (Ice Cream for Bears)', group: 'Ice cream',
+    description: 'Carter\'s convenience pick for the website (Nov 12, 2026): a French-style vanilla bean ice cream whose whole label is milk, cream, raw honey, skim milk, egg yolk, vanilla. The brand states grass-fed dairy and adds the honey raw after pasteurizing. In the checked database this pint is banned under the best standard because the dairy is pasteurized, not raw; for the website Carter trusts it as close enough, since a raw-dairy ice cream is effectively impossible to buy.',
+    steps: ['Scoop 2/3 cup (one label serving) into a bowl.', 'Eat it as the snack, between the midday and evening meals.'], minutes: 2,
+    fixedNutrition: { kcal: 270, protein: 6, fat: 17, carbs: 24, fiber: 0 }, fixedCost: 3.60,
+    portionText: '2/3 cup (one label serving)', unitLabel: '14 fl oz pint', servingsPerUnit: 2.5,
+    poolItem: 'Queen & Bean ice cream (Ice Cream for Bears)', poolText: 'Ice Cream for Bears Queen & Bean pints, about $8.99 at Kroger-family stores (Mariano\'s lists $8.99); the brand sells direct at $12 a pint.',
+    buy: { label: 'Mariano\'s (Ice Cream for Bears Queen & Bean pint)', url: 'https://www.marianos.com/p/queen-bean-vanilla-bean-french-ice-cream/0085007502403' } },
 ];
 export const SNACK_BY_ID = Object.fromEntries(SNACK_CATALOG.map((s) => [s.id, s]));
 export const SNACK_GROUPS = [...new Set(SNACK_CATALOG.map((s) => s.group))];
