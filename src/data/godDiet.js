@@ -552,6 +552,13 @@ export const SNACK_CATALOG = [
     portionText: '2/3 cup (one label serving)', unitLabel: '14 fl oz pint', servingsPerUnit: 2.5,
     poolItem: 'Dough Bear ice cream (Ice Cream for Bears)', poolText: 'Ice Cream for Bears Dough Bear pints, about $8.99 at Kroger-family stores; the brand sells direct at $12 a pint.',
     buy: { label: 'Ice Cream for Bears (brand store)', url: 'https://icecreamforbears.com' } },
+  { id: 'cosmic-bliss-vanilla', name: 'Vanilla Bean Nirvana (Cosmic Bliss)', group: 'Ice cream', storeBought: true,
+    description: 'Organic grass-fed dairy (the brand states 100 percent grass-fed milk), sweetened with certified organic coconut syrup instead of cane sugar, with vanilla extract and bean specks. It carries guar gum. On the website forgiveness shelf under Carter\'s rulings: pasteurized dairy at least grass-fed passes, organic coconut syrup counts as organic cane sugar, and gums pass for preference on this shelf. The brand declares its dairy line free from soy, with an allergen testing program.',
+    steps: ['Scoop 2/3 cup (one label serving) into a bowl.', 'Eat it as the snack, between the midday and evening meals.'], minutes: 2,
+    fixedNutrition: { kcal: 310, protein: 5, fat: 22, carbs: 24, fiber: 0 }, fixedCost: 3.60,
+    portionText: '2/3 cup (one label serving)', unitLabel: '14 fl oz pint', servingsPerUnit: 2.5,
+    poolItem: 'Vanilla Bean Nirvana (Cosmic Bliss)', poolText: 'Cosmic Bliss Vanilla Bean Nirvana pints, $8.99 suggested retail at Sprouts and Natural Grocers.',
+    buy: { label: 'Cosmic Bliss (brand site)', url: 'https://cosmicbliss.com' } },
 ];
 export const SNACK_BY_ID = Object.fromEntries(SNACK_CATALOG.map((s) => [s.id, s]));
 export const SNACK_GROUPS = [...new Set(SNACK_CATALOG.map((s) => s.group))];
